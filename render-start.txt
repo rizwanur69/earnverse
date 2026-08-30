@@ -1,0 +1,3 @@
+Build: npm install
+Start: npm start
+Add a PostgreSQL/Supabase DATABASE_URL and all variables from .env.example.
