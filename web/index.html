@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>MYCOIN</title>
+<script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+<style>
+:root{--bg:#071019;--card:#0d1824;--card2:#101f2d;--text:#f4f8fb;--muted:#91a4b5;--line:#1b2c3b;--accent:#67e8f9;--accent2:#8b5cf6;--ok:#34d399;--danger:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#17324b 0,#071019 42%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+button,input{font:inherit}button{border:0;color:var(--text);cursor:pointer}.app{max-width:520px;margin:auto;min-height:100vh;padding:14px 14px 92px}
+.top{display:flex;align-items:center;justify-content:space-between}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#172839;border:1px solid #294257}.balance{padding:9px 13px;border:1px solid #263d50;background:#0c1723;border-radius:12px;font-weight:800;font-size:13px}
+.page{display:none;animation:in .2s ease}.page.active{display:block}@keyframes in{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}
+.hero{text-align:center;padding:28px 0 22px}.mascot{width:118px;height:118px;margin:auto;border-radius:36px;display:grid;place-items:center;background:linear-gradient(145deg,#182f43,#0e1c29);border:1px solid #29445b;box-shadow:0 18px 50px #0005;font-size:62px}.hero h1{margin:14px 0 4px;font-size:25px}.hero p{margin:0;color:var(--muted);font-size:13px}
+.card{background:linear-gradient(160deg,#0f1d2b,#0b1520);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 12px 40px #0003}.cardtitle{display:flex;justify-content:space-between;align-items:center;font-weight:800}.muted{color:var(--muted);font-size:13px}.checkrow{display:flex;gap:8px;margin:16px 0 12px;overflow:auto;padding-bottom:3px}.day{min-width:45px;text-align:center}.dot{width:34px;height:34px;margin:5px auto;border-radius:50%;display:grid;place-items:center;background:#172838;color:#6d8292;font-size:12px}.dot.done{background:#123e3a;color:#71f1c9}.dot.today{outline:2px solid var(--accent)}
+.primary{width:100%;padding:12px;border-radius:13px;background:linear-gradient(135deg,var(--accent2),#4f46e5);font-weight:800}.secondary{padding:10px 12px;border-radius:12px;background:#152737}.disabled{opacity:.45;pointer-events:none}.task{display:flex;gap:12px;align-items:center}.taskicon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#14283a;font-size:21px}.taskbody{flex:1}.taskbody b{display:block}.taskbody small{color:var(--muted)}.reward{font-size:12px;color:#72f4d1;font-weight:800}.nav{position:fixed;bottom:0;left:0;right:0;z-index:10;background:#08121cdd;backdrop-filter:blur(18px);border-top:1px solid #1a2b3a}.navin{max-width:520px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}.nav button{background:none;color:#7890a1;font-size:11px;padding:7px 0}.nav button.active{color:#fff}.nav .ico{display:block;font-size:19px;margin-bottom:3px}.row{display:flex;gap:9px}.row>*{flex:1}input,select{width:100%;padding:12px;border-radius:12px;border:1px solid #24394b;background:#0a1520;color:#fff;outline:none}.stat{font-size:25px;font-weight:900}.pill{display:inline-block;padding:5px 8px;border-radius:9px;background:#142737;color:#a8bac8;font-size:11px}.danger{color:var(--danger)}.success{color:var(--ok)}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(15px);opacity:0;background:#101d2a;border:1px solid #294055;padding:11px 14px;border-radius:12px;transition:.2s;z-index:30;font-size:13px}.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <img id="avatar" class="avatar" alt="profile">
+    <div class="balance"><span id="balance">0</span> P</div>
+  </header>
+
+  <main>
+    <section id="home" class="page active">
+      <div class="hero">
+        <div class="mascot">🪙</div>
+        <h1 id="coinName">MYCOIN</h1>
+        <p>Collect points and use the tools below.</p>
+      </div>
+      <div class="card">
+        <div class="cardtitle"><span>🎁 Daily Check-in</span><span id="streak" class="pill">0 day streak</span></div>
+        <div id="days" class="checkrow"></div>
+        <button id="checkinBtn" class="primary" onclick="checkin()">CHECK IN</button>
+      </div>
+      <div class="card">
+        <div class="cardtitle"><span>Quick actions</span></div>
+        <div class="row" style="margin-top:12px">
+          <button class="secondary" onclick="go('tasks')">🎯 Tasks</button>
+          <button class="secondary" onclick="go('referral')">👥 Referral</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tasks" class="page">
+      <h2>Tasks</h2><p class="muted">Complete verified tasks to receive points.</p>
+      <div id="taskList"></div>
+      <div id="adBox" class="card" style="display:none">
+        <div class="cardtitle"><span>📺 Rewarded Ad</span><span class="reward">Verified reward</span></div>
+        <p class="muted">Watch an eligible rewarded ad. Points are added only after the ad provider confirms completion.</p>
+        <button class="primary" onclick="watchAd()">WATCH AD</button>
+      </div>
+    </section>
+
+    <section id="referral" class="page">
+      <h2>Referral</h2>
+      <div class="card"><div class="muted">Your referral earnings</div><div id="refEarn" class="stat">0 P</div><p class="muted">Commission: <b id="refPct">2%</b></p></div>
+      <div class="card"><div class="muted">Referrals</div><div id="refCount" class="stat">0</div><p class="muted">Share your personal link.</p><button class="primary" onclick="copyReferral()">COPY REFERRAL LINK</button></div>
+    </section>
+
+    <section id="profile" class="page">
+      <h2>Profile</h2>
+      <div class="card">
+        <div class="row" style="align-items:center"><img id="profileAvatar" class="avatar" style="width:58px;height:58px"><div><b id="profileName">User</b><div id="profileId" class="muted">ID</div></div></div>
+      </div>
+      <div class="card">
+        <div class="cardtitle"><span>💱 Exchange</span></div>
+        <p class="muted">Convert points to USDT calculation.</p>
+        <input id="exchangePoints" type="number" min="1" placeholder="Points">
+        <p class="muted">Estimated: <b id="exchangeOut">0 USDT</b></p>
+        <button class="primary" onclick="exchange()">EXCHANGE</button>
+      </div>
+      <div class="card">
+        <div class="cardtitle"><span>💸 Withdraw</span><span id="minWithdraw" class="pill">Min 1 USDT</span></div>
+        <p class="muted">A withdrawal request holds the required points until an admin processes it.</p>
+        <input id="withdrawUsdt" type="number" step="0.01" min="0" placeholder="USDT amount">
+        <div style="height:8px"></div><input id="wallet" maxlength="120" placeholder="USDT wallet address">
+        <div style="height:8px"></div><select id="network"><option>TRC20</option><option>TON</option><option>ERC20</option></select>
+        <div style="height:8px"></div><button class="primary" onclick="withdraw()">REQUEST WITHDRAWAL</button>
+      </div>
+      <div class="card"><div class="cardtitle"><span>Withdrawal history</span></div><div id="withdrawals"></div></div>
+    </section>
+  </main>
+</div>
+
+<nav class="nav"><div class="navin">
+  <button class="active" data-page="home" onclick="go('home')"><span class="ico">⌂</span>Home</button>
+  <button data-page="tasks" onclick="go('tasks')"><span class="ico">✓</span>Tasks</button>
+  <button data-page="referral" onclick="go('referral')"><span class="ico">♧</span>Referral</button>
+  <button data-page="profile" onclick="go('profile')"><span class="ico">◯</span>Profile</button>
+</div></nav>
+<div id="toast" class="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+tg?.ready(); tg?.expand();
+const INIT = tg?.initData || "";
+let state = null;
+
+async function api(path, options={}) {
+  const headers = {"Content-Type":"application/json","X-Telegram-Init-Data":INIT};
+  const r = await fetch(path,{...options,headers:{...headers,...(options.headers||{})}});
+  const data = await r.json().catch(()=>({error:"Server error"}));
+  if(!r.ok) throw new Error(data.error||"Request failed");
+  return data;
+}
+function toast(s){const x=document.getElementById("toast");x.textContent=s;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),2200)}
+function fmt(n){return new Intl.NumberFormat(undefined,{maximumFractionDigits:4}).format(Number(n||0))}
+function go(id){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));
+}
+function render(){
+  const u=state.user,s=state.settings;
+  document.getElementById("balance").textContent=fmt(u.points);
+  document.getElementById("coinName").textContent=s.coinName;
+  document.getElementById("refEarn").textContent=fmt(u.referralEarnings)+" P";
+  document.getElementById("refCount").textContent=state.referrals.count;
+  document.getElementById("refPct").textContent=s.referralPercent+"%";
+  document.getElementById("minWithdraw").textContent="Min "+s.minWithdrawUsdt+" USDT";
+  document.getElementById("profileName").textContent=[u.firstName,u.lastName].filter(Boolean).join(" ")||u.username||"User";
+  document.getElementById("profileId").textContent="Telegram ID: "+u.telegramId;
+  const avatar=u.photoUrl||"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect width='100%' height='100%' fill='%23172839'/><text x='50%' y='58%' text-anchor='middle' font-size='34'>👤</text></svg>";
+  document.getElementById("avatar").src=avatar;document.getElementById("profileAvatar").src=avatar;
+  const checkins=state.checkins;
+  const latest=checkins[0]?.streak||0;document.getElementById("streak").textContent=latest+" day streak";
+  const days=document.getElementById("days");days.innerHTML="";
+  const set=new Set(checkins.map(x=>String(x.checkin_date).slice(0,10)));
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.toISOString().slice(0,10);days.innerHTML+=`<div class="day"><small>${d.toLocaleDateString(undefined,{weekday:"short"})}</small><div class="dot ${set.has(key)?"done":""} ${i===0?"today":""}">${set.has(key)?"✓":"·"}</div></div>`}
+  document.getElementById("checkinBtn").classList.toggle("disabled",checkins.some(x=>String(x.checkin_date).slice(0,10)===new Date().toISOString().slice(0,10)));
+  const tl=document.getElementById("taskList");tl.innerHTML="";
+  state.tasks.forEach(t=>{
+    const can=t.type!=="manual";
+    tl.innerHTML+=`<div class="card task"><div class="taskicon">${t.type==="ad"?"📺":"🎯"}</div><div class="taskbody"><b>${esc(t.title)}</b><small>${esc(t.description)}</small><div class="reward">+${fmt(t.reward)} P</div></div><button class="secondary ${t.claimed||!can?"disabled":""}" onclick="claimTask(${t.id})">${t.claimed?"✓":"GO"}</button></div>`;
+  });
+  document.getElementById("adBox").style.display=s.adsEnabled?"block":"none";
+  document.getElementById("withdrawals").innerHTML=state.withdrawals.length?state.withdrawals.map(w=>`<div class="card" style="margin:8px 0"><b>#${w.id}</b> · ${w.usdt} USDT <span class="pill">${w.status}</span><div class="muted">${esc(w.wallet)}</div></div>`).join(""):"<p class='muted'>No withdrawals yet.</p>";
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
+async function load(){state=await api("/api/bootstrap");render()}
+async function checkin(){try{const x=await api("/api/checkin",{method:"POST",body:"{}"});toast("+"+fmt(x.reward)+" points");await load()}catch(e){toast(e.message)}}
+async function claimTask(id){try{await api("/api/tasks/"+id+"/claim",{method:"POST",body:"{}"});toast("Task completed");await load()}catch(e){toast(e.message)}}
+async function watchAd(){
+  toast("Ad provider is not configured yet.");
+}
+async function copyReferral(){
+  const ref=state.user.telegramId;
+  const cfg=await fetch("/config").then(r=>r.json());
+  const link=cfg.botUsername ? `https://t.me/${cfg.botUsername}?startapp=${ref}` : `Telegram ID: ${ref}`;
+  await navigator.clipboard.writeText(link);toast("Referral link copied");
+}
+document.getElementById("exchangePoints").addEventListener("input",e=>{
+  const p=Number(e.target.value||0);document.getElementById("exchangeOut").textContent=(p/state.settings.pointsPerUsdt).toFixed(6)+" USDT";
+});
+async function exchange(){
+  try{const p=Number(document.getElementById("exchangePoints").value);const x=await api("/api/exchange",{method:"POST",body:JSON.stringify({points:p})});toast("Exchanged for "+x.usdt.toFixed(6)+" USDT");document.getElementById("exchangePoints").value="";await load()}catch(e){toast(e.message)}
+}
+async function withdraw(){
+  try{const usdt=Number(document.getElementById("withdrawUsdt").value);const wallet=document.getElementById("wallet").value.trim();const network=document.getElementById("network").value;const x=await api("/api/withdraw",{method:"POST",body:JSON.stringify({usdt,wallet,network})});toast("Withdrawal request #"+x.withdrawalId);await load()}catch(e){toast(e.message)}
+}
+(async()=>{
+  try{
+    if(!INIT){document.body.innerHTML="<div style='padding:30px;color:white'>Open this app inside Telegram.</div>";return}
+    const ref=new URLSearchParams(location.search).get("startapp")||tg?.initDataUnsafe?.start_param;
+    if(ref) await api("/api/start",{method:"POST",body:JSON.stringify({ref})});
+    await load();
+  }catch(e){document.body.innerHTML="<div style='padding:30px;color:white'>Unable to load app: "+esc(e.message)+"</div>"}
+})();
+</script>
+</body>
+</html>

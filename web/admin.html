@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MYCOIN Admin</title>
+<style>
+body{margin:0;background:#081019;color:#eef6fb;font-family:system-ui;padding:24px}main{max-width:1100px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.card{background:#0e1b27;border:1px solid #203344;border-radius:16px;padding:16px;margin:12px 0}input,select,button{padding:10px;border-radius:10px;border:1px solid #294055;background:#0a1520;color:white}button{cursor:pointer;background:#3348a8}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}.muted{color:#90a5b6;font-size:13px}.danger{background:#7f263b}.ok{background:#126044}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #1d2d3b;text-align:left;font-size:13px}
+</style></head><body><main>
+<h1>MYCOIN Admin</h1>
+<div id="summary" class="grid"></div>
+<div class="card"><h2>Economy</h2><div class="row">
+<input id="coin_name" placeholder="Coin name"><input id="points_per_usdt" placeholder="Points per USDT"><input id="referral_percent" placeholder="Referral %"><input id="checkin_reward" placeholder="Check-in reward"><input id="min_withdraw_usdt" placeholder="Min withdrawal USDT"><input id="withdraw_network" placeholder="Network">
+</div><button onclick="saveSettings()">Save settings</button></div>
+
+<div class="card"><h2>Add task</h2><div class="row"><input id="title" placeholder="Title"><input id="description" placeholder="Description"><input id="reward" type="number" placeholder="Reward"><select id="type"><option value="manual">Manual/verified</option><option value="ad">Ad</option></select><input id="url" placeholder="Task URL"></div><label><input id="daily" type="checkbox"> Daily</label> <label><input id="active" type="checkbox" checked> Active</label> <button onclick="addTask()">Add task</button></div>
+
+<div class="card"><h2>Tasks</h2><div id="tasks"></div></div>
+<div class="card"><h2>Withdrawals</h2><div id="withdrawals"></div></div>
+</main>
+<script>
+async function api(p,o={}){const r=await fetch(p,{...o,headers:{"Content-Type":"application/json",...(o.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Error");return d}
+function el(id){return document.getElementById(id)}
+async function load(){const s=await api("/api/admin/summary");el("summary").innerHTML=`<div class=card>Users<br><b>${s.users}</b></div><div class=card>Active tasks<br><b>${s.tasks}</b></div><div class=card>Pending withdrawals<br><b>${s.pendingWithdrawals}</b></div><div class=card>Total points<br><b>${s.totalPoints}</b></div>`;const t=await api("/api/admin/tasks");el("tasks").innerHTML=t.map(x=>`<div class=card><b>${esc(x.title)}</b> · +${x.reward} P · ${x.type} · ${x.daily?"daily":"once"} <button class=danger onclick="delTask(${x.id})">Delete</button></div>`).join("");const w=await api("/api/admin/withdrawals");el("withdrawals").innerHTML=`<table><tr><th>ID</th><th>User</th><th>USDT</th><th>Wallet</th><th>Status</th><th>Action</th></tr>${w.map(x=>`<tr><td>${x.id}</td><td>${esc(x.username||x.first_name||x.telegram_id)}</td><td>${x.usdt}</td><td>${esc(x.wallet)}</td><td>${x.status}</td><td>${x.status==="pending"?`<button class=ok onclick="wd(${x.id},'approved')">Approve</button> <button class=danger onclick="wd(${x.id},'rejected')">Reject</button>`:"—"}</td></tr>`).join("")}</table>`}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
+async function addTask(){await api("/api/admin/tasks",{method:"POST",body:JSON.stringify({title:el("title").value,description:el("description").value,reward:Number(el("reward").value),type:el("type").value,url:el("url").value,daily:el("daily").checked,active:el("active").checked})});alert("Task added");load()}
+async function delTask(id){if(confirm("Delete task?")){await api("/api/admin/tasks/"+id,{method:"DELETE"});load()}}
+async function wd(id,status){await api("/api/admin/withdrawals/"+id,{method:"POST",body:JSON.stringify({status})});load()}
+async function saveSettings(){await api("/api/admin/settings",{method:"POST",body:JSON.stringify({coin_name:el("coin_name").value,points_per_usdt:el("points_per_usdt").value,referral_percent:el("referral_percent").value,checkin_reward:el("checkin_reward").value,min_withdraw_usdt:el("min_withdraw_usdt").value,withdraw_network:el("withdraw_network").value})});alert("Saved")}
+load()
+</script></body></html>
