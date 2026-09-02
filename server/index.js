@@ -502,18 +502,58 @@ app.use(express.static(path.join(__dirname, "../web")));
 
 if (botToken && miniAppUrl) {
   const bot = new TelegramBot(botToken, { polling: false });
+
+  const webhookSecret =
+    process.env.TELEGRAM_WEBHOOK_SECRET || "earnverse-webhook-secret";
+
+  app.post("/telegram/webhook", (req, res) => {
+    const receivedSecret =
+      req.headers["x-telegram-bot-api-secret-token"];
+
+    if (receivedSecret !== webhookSecret) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+  });
+
   bot.setMyCommands([
-    { command: "start", description: "Open MYCOIN" },
+    { command: "start", description: "Open EarnVerse" },
     { command: "help", description: "Help" }
-  ]).catch(()=>{});
+  ]).catch(() => {});
+
   bot.onText(/^\/start(?:\s+(.+))?/, async (msg, match) => {
     const ref = match?.[1] ? encodeURIComponent(match[1]) : "";
-    const url = ref ? `${miniAppUrl}?startapp=${ref}` : miniAppUrl;
-    await bot.sendMessage(msg.chat.id, "Welcome to MYCOIN.", {
-      reply_markup: { inline_keyboard: [[{ text: "🚀 Open MYCOIN", web_app: { url } }]] }
+    const url = ref
+      ? `${miniAppUrl}?startapp=${ref}`
+      : miniAppUrl;
+
+    await bot.sendMessage(msg.chat.id, "Welcome to EarnVerse.", {
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "🚀 Open EarnVerse",
+            web_app: { url }
+          }
+        ]]
+      }
     });
   });
-  bot.onText(/^\/help/, async msg => bot.sendMessage(msg.chat.id, "Open the Mini App from the button."));
+
+  bot.onText(/^\/help/, async msg => {
+    await bot.sendMessage(
+      msg.chat.id,
+      "Open EarnVerse from the button."
+    );
+  });
+
+  bot
+    .setWebHook(`${miniAppUrl}/telegram/webhook`, {
+      secret_token: webhookSecret
+    })
+    .then(() => console.log("Telegram webhook enabled"))
+    .catch(err => console.error("Webhook setup failed:", err.message));
 }
 
 app.listen(PORT, () => console.log(`MYCOIN server running on ${PORT}`));
