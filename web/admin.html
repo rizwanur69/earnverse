@@ -169,73 +169,65 @@ async function login(){
    API
 ========================= */
 
-async function api(path, options = {}){
+async function api(path, options = {}) {
 
-  if(!ADMIN_AUTH){
-
+  if (!ADMIN_AUTH) {
     const ok = await login();
 
-    if(!ok){
+    if (!ok) {
       throw new Error("Admin login cancelled");
     }
-
   }
 
-
   const headers = {
-    "Content-Type":"application/json",
-    "Authorization":ADMIN_AUTH,
+    "Content-Type": "application/json",
+    "Authorization": ADMIN_AUTH,
     ...(options.headers || {})
   };
-
 
   let response = await fetch(path, {
     ...options,
     headers
   });
 
-
-  /*
-   * If credentials are wrong,
-   * clear saved login and ask again once.
-   */
-
-  if(response.status === 401 || response.status === 403){
+  if (response.status === 401 || response.status === 403) {
 
     localStorage.removeItem("earnverse_admin_auth");
     ADMIN_AUTH = "";
 
     const ok = await login();
 
-    if(!ok){
+    if (!ok) {
       throw new Error("Admin login cancelled");
     }
 
     response = await fetch(path, {
       ...options,
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":ADMIN_AUTH,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": ADMIN_AUTH,
         ...(options.headers || {})
       }
     });
-
   }
 
+  const text = await response.text();
 
-  const data =
-    await response.json().catch(()=>({}));
+  let data = {};
 
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
 
-  if(!response.ok){
-
+  if (!response.ok) {
     throw new Error(
       data.error ||
+      text ||
       `Request failed (${response.status})`
     );
-
   }
-
 
   return data;
 }
