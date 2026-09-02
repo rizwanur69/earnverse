@@ -69,7 +69,7 @@ async function awardPoints(client, telegramId, amount, kind, referenceId, note) 
 }
 
 async function awardReferralCommission(client, telegramId, earnedAmount, sourceRef) {
-  const percent = num(await setting("referral_percent", "2"), 2);
+  const percent = num(await setting("referral_percent", "10"), 10);
   if (!(percent > 0)) return;
   const u = await client.query(
     "SELECT referred_by FROM users WHERE telegram_id=$1",
