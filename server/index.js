@@ -169,17 +169,53 @@ app.get("/api/bootstrap", async (req, res) => {
 app.post("/api/start", async (req, res) => {
   const user = await getUserFromReq(req, res);
   if (!user) return;
+
   const ref = String(req.body?.ref || "").trim();
+
   if (!ref || ref === String(user.telegram_id) || user.referred_by) {
     return res.json({ ok: true });
   }
-  const referrer = await pool.query("SELECT telegram_id FROM users WHERE telegram_id=$1", [ref]);
-  if (!referrer.rows[0]) return res.json({ ok: true });
-  await pool.query(
-    "UPDATE users SET referred_by=$1,updated_at=NOW() WHERE telegram_id=$2 AND referred_by IS NULL",
-    [Number(ref), user.telegram_id]
+
+  const referrer = await pool.query(
+    "SELECT telegram_id FROM users WHERE telegram_id=$1",
+    [ref]
   );
-  res.json({ ok: true });
+
+  if (!referrer.rows[0]) {
+    return res.json({ ok: true });
+  }
+
+  try {
+    await withTx(async client => {
+      // Connect this new user to the referrer.
+      const linked = await client.query(
+        `UPDATE users
+         SET referred_by=$1, updated_at=NOW()
+         WHERE telegram_id=$2 AND referred_by IS NULL
+         RETURNING telegram_id`,
+        [Number(ref), user.telegram_id]
+      );
+
+      // Only give the 200 EV signup bonus if the referral
+      // was actually linked for the first time.
+      if (!linked.rows[0]) return;
+
+      const referralBonus = 200;
+
+      await awardPoints(
+        client,
+        Number(ref),
+        referralBonus,
+        "referral_bonus",
+        String(user.telegram_id),
+        "Referral signup bonus"
+      );
+    });
+
+    res.json({ ok: true, referralBonus: 200 });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 app.post("/api/checkin", async (req, res) => {
