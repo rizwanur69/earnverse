@@ -15,7 +15,20 @@ body{margin:0;background:#081019;color:#eef6fb;font-family:system-ui;padding:24p
 <div class="card"><h2>Withdrawals</h2><div id="withdrawals"></div></div>
 </main>
 <script>
-async function api(p,o={}){const r=await fetch(p,{...o,headers:{"Content-Type":"application/json",...(o.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Error");return d}
+async function api(p,o={}) {
+  const auth = "Basic " + btoa(prompt("Admin username:") + ":" + prompt("Admin password:"));
+  const r = await fetch(p, {
+    ...o,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": auth,
+      ...(o.headers || {})
+    }
+  });
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw Error(d.error || "Error");
+  return d;
+}
 function el(id){return document.getElementById(id)}
 async function load(){const s=await api("/api/admin/summary");el("summary").innerHTML=`<div class=card>Users<br><b>${s.users}</b></div><div class=card>Active tasks<br><b>${s.tasks}</b></div><div class=card>Pending withdrawals<br><b>${s.pendingWithdrawals}</b></div><div class=card>Total points<br><b>${s.totalPoints}</b></div>`;const t=await api("/api/admin/tasks");el("tasks").innerHTML=t.map(x=>`<div class=card><b>${esc(x.title)}</b> · +${x.reward} P · ${x.type} · ${x.daily?"daily":"once"} <button class=danger onclick="delTask(${x.id})">Delete</button></div>`).join("");const w=await api("/api/admin/withdrawals");el("withdrawals").innerHTML=`<table><tr><th>ID</th><th>User</th><th>USDT</th><th>Wallet</th><th>Status</th><th>Action</th></tr>${w.map(x=>`<tr><td>${x.id}</td><td>${esc(x.username||x.first_name||x.telegram_id)}</td><td>${x.usdt}</td><td>${esc(x.wallet)}</td><td>${x.status}</td><td>${x.status==="pending"?`<button class=ok onclick="wd(${x.id},'approved')">Approve</button> <button class=danger onclick="wd(${x.id},'rejected')">Reject</button>`:"—"}</td></tr>`).join("")}</table>`}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
