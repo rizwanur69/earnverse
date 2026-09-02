@@ -501,7 +501,7 @@ app.post("/api/admin/settings", adminAuth, async(req,res)=>{
 app.use(express.static(path.join(__dirname, "../web")));
 
 if (botToken && miniAppUrl) {
-  const bot = new TelegramBot(botToken, { polling: true });
+  const bot = new TelegramBot(botToken, { polling: false });
   bot.setMyCommands([
     { command: "start", description: "Open MYCOIN" },
     { command: "help", description: "Help" }
